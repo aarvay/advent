@@ -1,5 +1,4 @@
 defmodule Checksum do
-
   def run(input_path, p) do
     File.read!(input_path)
     |> String.split("\n")
@@ -46,7 +45,6 @@ defmodule Checksum do
     res = for i <- [h], j <- t, do: {i, j}
     res ++ unique_pairs(t)
   end
-
 end
 
 "input" |> Checksum.run(1)
