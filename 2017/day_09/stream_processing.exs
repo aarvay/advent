@@ -1,5 +1,5 @@
 defmodule State do
-  defstruct [level: 0, in_garbage?: false, ignore?: false, score: 0]
+  defstruct [level: 0, in_garbage?: false, ignore?: false, score: 0, chars: 0]
 end
 
 defmodule StreamProcessing do
@@ -7,8 +7,10 @@ defmodule StreamProcessing do
     result =
       File.stream!(input, [], 1)
       |> Enum.reduce(%State{}, &(process(&1, &2)))
+      |> IO.inspect
 
     IO.puts result.score # Part 1
+    IO.puts result.chars # Part 2
   end
 
   def process(char, state) do
@@ -21,7 +23,7 @@ defmodule StreamProcessing do
             case char do
               ">" -> %{state | in_garbage?: false}
               "!" -> %{state | ignore?: true}
-              _ -> state
+              _ -> %{state | chars: state.chars + 1}
             end
           false ->
             case char do
