@@ -1,21 +1,53 @@
 defmodule KnotHash do
-  def run(input) do
-    [x, y] =
-      File.read!(input)
-      |> String.split([",", "\n"], trim: true)
-      |> Enum.map(&String.to_integer/1)
-      |> process(0..255, 0, 0)
-      |> Enum.take(2)
+  use Bitwise, skip_operators: true
 
-    IO.puts x*y # Part 1
+  def run(input, p) do
+    lengths = get_lengths(input, p)
+
+    case p do
+      1 ->
+        [x, y] =
+          lengths
+          |> multi_process(0..255, 0, 0, 1)
+          |> Enum.take(2)
+        x*y
+      2 ->
+        lengths
+        |> multi_process(0..255, 0, 0, 64)
+        |> Enum.chunk_every(16)
+        |> Enum.map(&(Enum.reduce(&1, fn(x, acc) -> bxor(acc, x) end)))
+        |> Enum.map(&to_hex/1)
+        |> IO.chardata_to_string
+        |> String.downcase
+    end
   end
 
-  defp process([], list, _, _), do: list
+  defp get_lengths(input, 1) do
+    File.read!(input)
+    |> String.split([",", "\n"], trim: true)
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  defp get_lengths(input, 2) do
+    lengths =
+      File.read!(input)
+      |> String.trim
+      |> String.to_charlist
+    lengths ++ [17, 31, 73, 47, 23]
+  end
+
+  defp multi_process(_, list, _, _, 0), do: list
+
+  defp multi_process(lengths, list, start, skip_size, round) do
+    {list2, start2, skip_size2} = process(lengths, list, start, skip_size)
+    multi_process(lengths, list2, start2, skip_size2, round-1)
+  end
+
+  defp process([], list, start, skip_size), do: {list, start, skip_size}
 
   defp process([h | t], list, start, skip_size) do
     list = reverse_slice(list, start, h)
-    next =
-      if (tot = start+h+skip_size) >= 256, do: tot - 256, else: tot
+    next = get_next_pos(start+h+skip_size)
     process(t, list, next, skip_size + 1)
   end
 
@@ -30,6 +62,15 @@ defmodule KnotHash do
   end
 
   defp reverse_slice(list, start, count), do: Enum.reverse_slice(list, start, count)
+
+  defp get_next_pos(pos) when (pos < 256), do: pos
+  defp get_next_pos(pos), do: get_next_pos(pos-256)
+
+  defp to_hex(int) do
+    int16 = Integer.to_charlist(int, 16)
+    if Enum.count(int16) == 1, do: [?0 | int16], else: int16
+  end
 end
 
-"input" |> KnotHash.run
+"input" |> KnotHash.run(1) |> IO.inspect
+"input" |> KnotHash.run(2) |> IO.inspect
