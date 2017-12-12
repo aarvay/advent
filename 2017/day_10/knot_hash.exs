@@ -5,21 +5,27 @@ defmodule KnotHash do
     lengths = get_lengths(input, p)
 
     case p do
-      1 ->
-        [x, y] =
-          lengths
-          |> multi_process(0..255, 0, 0, 1)
-          |> Enum.take(2)
-        x*y
-      2 ->
-        lengths
-        |> multi_process(0..255, 0, 0, 64)
-        |> Enum.chunk_every(16)
-        |> Enum.map(&(Enum.reduce(&1, fn(x, acc) -> bxor(acc, x) end)))
-        |> Enum.map(&to_hex/1)
-        |> IO.chardata_to_string
-        |> String.downcase
+      1 -> part1(lengths)
+      2 -> part2(lengths)
     end
+  end
+
+  defp part1(lengths) do
+    [x, y] =
+      lengths
+      |> multi_process(0..255, 0, 0, 1)
+      |> Enum.take(2)
+    x*y
+  end
+
+  defp part2(lengths) do
+    lengths
+    |> multi_process(0..255, 0, 0, 64)
+    |> Enum.chunk_every(16)
+    |> Enum.map(fn chunk -> Enum.reduce(chunk, &bxor/2) end)
+    |> Enum.map(&to_hex/1)
+    |> IO.chardata_to_string
+    |> String.downcase
   end
 
   defp get_lengths(input, 1) do
@@ -29,11 +35,10 @@ defmodule KnotHash do
   end
 
   defp get_lengths(input, 2) do
-    lengths =
-      File.read!(input)
-      |> String.trim
-      |> String.to_charlist
-    lengths ++ [17, 31, 73, 47, 23]
+    File.read!(input)
+    |> String.trim
+    |> String.to_charlist
+    |> Kernel.++([17, 31, 73, 47, 23])
   end
 
   defp multi_process(_, list, _, _, 0), do: list
